@@ -15,17 +15,62 @@ a{color:var(--hi)}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 <div class="card"><small>要看里面，得有钥匙</small><div class="row" style="margin-top:10px">
 <a href="private.html">进私人区 →</a></div></div>
 <script>
+
+const CV={rx:0.35,ry:0.6,zoom:1.1};
+function bind3D(canvas, stars, onPick){
+  const ctx=canvas.getContext('2d');
+  let drag=false,lx=0,ly=0;
+  function rot(p){
+    const cx=Math.cos(CV.rx),sx=Math.sin(CV.rx),cy=Math.cos(CV.ry),sy=Math.sin(CV.ry);
+    const y1=p.y*cx-p.z*sx, z1=p.y*sx+p.z*cx;
+    return [p.x*cy+z1*sy, y1, -p.x*sy+z1*cy];
+  }
+  function draw(){
+    const W=canvas.width,H=canvas.height,sc=Math.min(W,H)*CV.zoom;
+    ctx.fillStyle='#04070c';ctx.fillRect(0,0,W,H);
+    const pts=stars.map((d,i)=>{const [x,y,z]=rot({x:(d.x-0.5),y:(d.y-0.5),z:(d.z-0.5)});
+      return {X:x*sc+W/2,Y:y*sc+H/2,Z:z,d,i};});
+    pts.sort((a,b)=>a.Z-b.Z);
+    for(const p of pts){
+      const dep=Math.max(0,Math.min(1,(p.Z+0.5)));
+      const r=Math.max(1,(1.1+p.d.i*4.2)*(0.7+dep*0.7));
+      const a=Math.max(.2,.2+dep*.9);
+      ctx.beginPath();ctx.arc(p.X,p.Y,r,0,6.283);
+      ctx.fillStyle=COLOR(p.d.k,a);ctx.fill();
+    }
+    return pts;
+  }
+  let last=[];
+  function loop(){ last=draw(); if(!drag) requestAnimationFrame(()=>{}); }
+  canvas.addEventListener('mousedown',e=>{drag=true;lx=e.clientX;ly=e.clientY;});
+  addEventListener('mouseup',()=>{drag=false;});
+  addEventListener('mousemove',e=>{
+    if(drag){CV.ry+=(e.clientX-lx)*0.007;CV.rx+=(e.clientY-ly)*0.007;lx=e.clientX;ly=e.clientY;draw();}
+    else if(onPick&&last.length){
+      const r=canvas.getBoundingClientRect();
+      const mx=(e.clientX-r.left)*canvas.width/r.width, my=(e.clientY-r.top)*canvas.height/r.height;
+      let best=null,bd=1e9;
+      for(const p of last){const d=(p.X-mx)**2+(p.Y-my)**2;if(d<bd){bd=d;best=p;}}
+      onPick(bd<400?best:null);
+    }
+  });
+  canvas.addEventListener('wheel',e=>{CV.zoom=Math.max(0.6,Math.min(2.6,CV.zoom*(e.deltaY>0?0.94:1.06)));draw();e.preventDefault();},{passive:false});
+  canvas.addEventListener('touchmove',e=>{
+    const t=e.touches[0]; if(!lx){lx=t.clientX;ly=t.clientY;return;}
+    CV.ry+=(t.clientX-lx)*0.01; CV.rx+=(t.clientY-ly)*0.01; lx=t.clientX; ly=t.clientY; draw(); e.preventDefault();
+  },{passive:false});
+  canvas.addEventListener('touchend',()=>{lx=0;ly=0;});
+  draw();
+  window.__redraw=draw;
+}
+const PALETTE={person:'#7dd3fc',event:'#a5b4fc',summary:'#fbbf24',preference:'#f9a8d4',setting:'#86efac',
+ style:'#fca5a5',todo:'#fdba74',glossary:'#c4b5fd',pair:'#f472b6',self:'#fde68a'};
+function COLOR(k,a){const hex=PALETTE[k]||'#64748b';
+  const n=parseInt(hex.slice(1),16);return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;}
+
 fetch('public.json').then(r=>r.json()).then(d=>{
   document.getElementById('stats').innerHTML =
     `<span>记忆 ${d.count} 条</span>　<span>上线 ${d.days} 天</span>　<span>更新 ${d.time}</span>`;
-  const cv=document.getElementById('cv'),ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
-  ctx.fillStyle='#04070c';ctx.fillRect(0,0,W,H);
-  const C={person:'#7dd3fc',event:'#a5b4fc',summary:'#fbbf24',preference:'#f9a8d4',setting:'#86efac',
-   style:'#fca5a5',todo:'#fdba74',glossary:'#c4b5fd',pair:'#f472b6',self:'#fde68a'};
-  for(const s of d.stars||[]){
-    const x=s.x*(W-40)+20,y=s.y*(H-40)+20,r=1.4+s.i*4;
-    ctx.beginPath();ctx.arc(x,y,r,0,6.283);ctx.globalAlpha=.25+s.i*.9;
-    ctx.fillStyle=C[s.k]||'#64748b';ctx.fill();ctx.globalAlpha=1;
-  }
+  bind3D(document.getElementById('cv'), d.stars||[], null);
 });
 </script></body></html>
