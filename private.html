@@ -16,7 +16,7 @@ canvas{width:100%;height:auto;background:#04070c;border-radius:10px}
 <div id="gate">
   <h1>刘小鱼</h1><small>这里要密码</small>
   <div class="card" style="margin-top:14px"><div class="row">
-    <input id="pw" type="password" placeholder="密码" autofocus>
+    <input id="u" placeholder="用户名" autofocus><input id="pw" type="password" placeholder="密码">
     <button onclick="unlock()">进</button></div>
     <pre id="err" style="color:#ff9b9b;margin-top:8px"></pre></div>
 </div>
@@ -33,7 +33,8 @@ canvas{width:100%;height:auto;background:#04070c;border-radius:10px}
 <script>
 let DATA=null;
 async function unlock(){
-  const pw=document.getElementById('pw').value;
+  const u=document.getElementById('u').value.trim();
+  const pw=u+':'+document.getElementById('pw').value;
   try{
     const bin=await (await fetch('data.json.enc')).arrayBuffer();
     const salt=new TextEncoder().encode('liuxiaoyu-static-v1');
