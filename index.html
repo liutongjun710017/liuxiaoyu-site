@@ -1,0 +1,74 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>刘小鱼</title>
+<style>
+:root{--bg:#070a10;--card:#101827;--line:#1b2a40;--fg:#cfe0f5;--dim:#6b7f9e;--hi:#7fb2ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.7 system-ui;padding:18px}
+h1{font-size:19px;margin:0 0 4px;color:var(--hi)}small{color:var(--dim)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+pre{white-space:pre-wrap;margin:0;font:13px/1.7 ui-monospace,monospace}
+input{background:#0d1522;border:1px solid var(--line);color:var(--fg);padding:8px 10px;border-radius:8px}
+button{background:#1b2a44;border:1px solid #2b4569;color:#cfe0f5;padding:8px 14px;border-radius:8px;cursor:pointer}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px;border-bottom:1px solid var(--line);text-align:left}
+canvas{width:100%;height:auto;background:#04070c;border-radius:10px}
+.hide{display:none}
+</style></head><body>
+<div id="gate">
+  <h1>刘小鱼</h1><small>这里要密码</small>
+  <div class="card" style="margin-top:14px"><div class="row">
+    <input id="pw" type="password" placeholder="密码" autofocus>
+    <button onclick="unlock()">进</button></div>
+    <pre id="err" style="color:#ff9b9b;margin-top:8px"></pre></div>
+</div>
+<div id="main" class="hide">
+  <h1>刘小鱼</h1><small id="when"></small>
+  <div class="card"><div class="tag">身体</div><pre id="body"></pre></div>
+  <div class="card"><div class="tag">记忆</div><pre id="mem"></pre></div>
+  <div class="card"><div class="tag">信用</div><pre id="trust"></pre></div>
+  <div class="card"><div class="tag">记忆星图</div><canvas id="cv" width="900" height="900"></canvas></div>
+  <div class="card"><div class="tag">检索</div>
+    <div class="row"><input id="q" placeholder="搜一段记忆" size="28"><button onclick="search()">搜</button></div>
+    <table><tbody id="res"></tbody></table></div>
+</div>
+<script>
+let DATA=null;
+async function unlock(){
+  const pw=document.getElementById('pw').value;
+  try{
+    const bin=await (await fetch('data.json.enc')).arrayBuffer();
+    const salt=new TextEncoder().encode('liuxiaoyu-static-v1');
+    const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
+    const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:200000,hash:'SHA-256'},
+      base,{name:'AES-GCM',length:256},false,['decrypt']);
+    const iv=bin.slice(0,12), ct=bin.slice(12);
+    const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct);
+    DATA=JSON.parse(new TextDecoder().decode(plain));
+    show();
+  }catch(e){document.getElementById('err').textContent='密码不对，或者文件没取到';}
+}
+function show(){
+  document.getElementById('gate').classList.add('hide');
+  document.getElementById('main').classList.remove('hide');
+  document.getElementById('when').textContent=DATA.time||'';
+  body.textContent=DATA.body; mem.textContent=DATA.mem; trust.textContent=DATA.trust;
+  draw();
+}
+const COLOR={person:'#7dd3fc',event:'#a5b4fc',summary:'#fbbf24',preference:'#f9a8d4',setting:'#86efac',
+ style:'#fca5a5',todo:'#fdba74',glossary:'#c4b5fd',pair:'#f472b6',self:'#fde68a'};
+function draw(){
+  const cv=document.getElementById('cv'),ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
+  ctx.fillStyle='#04070c';ctx.fillRect(0,0,W,H);
+  for(const d of DATA.stars||[]){
+    const x=d.x*(W-40)+20,y=d.y*(H-40)+20,r=1.4+d.i*4;
+    ctx.beginPath();ctx.arc(x,y,r,0,6.283);ctx.globalAlpha=.25+d.i*.9;
+    ctx.fillStyle=COLOR[d.k]||'#64748b';ctx.fill();ctx.globalAlpha=1;
+  }
+}
+function search(){
+  const q=document.getElementById('q').value.trim();
+  const res=document.getElementById('res');
+  if(!q){res.innerHTML='';return;}
+  const hit=(DATA.items||[]).filter(x=>x[0].includes(q)).slice(0,50);
+  res.innerHTML=hit.length?hit.map(x=>`<tr><td style="color:#6b7f9e">${x[2].toFixed(2)}</td><td style="color:#6b7f9e">${x[1]}</td><td>${x[0].slice(0,90)}</td></tr>`).join(''):'<tr><td>没有</td></tr>';
+}
+</script></body></html>
