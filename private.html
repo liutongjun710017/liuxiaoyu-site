@@ -69,8 +69,12 @@ function bind3D(canvas, stars, onPick){
   function draw(){
     const W=canvas.width,H=canvas.height,sc=Math.min(W,H)*CV.zoom;
     ctx.fillStyle='#04070c';ctx.fillRect(0,0,W,H);
-    const pts=stars.map((d,i)=>{const [x,y,z]=rot({x:(d.x-0.5),y:(d.y-0.5),z:(d.z-0.5)});
-      return {X:x*sc+W/2,Y:y*sc+H/2,Z:z,d,i};});
+    const raw=stars.map((d,i)=>{const [x,y,z]=rot({x:(d.x-0.5),y:(d.y-0.5),z:(d.z-0.5)});
+      return {x,y,z,d,i};});
+    let mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e9;
+    for(const q of raw){mnx=Math.min(mnx,q.x);mxx=Math.max(mxx,q.x);mny=Math.min(mny,q.y);mxy=Math.max(mxy,q.y);}
+    const sx=(mxx-mnx)||1, sy=(mxy-mny)||1, s0=Math.min((W*0.9)/sx,(H*0.9)/sy)*CV.zoom;
+    const pts=raw.map(q=>({X:(q.x-mnx)/sx*W*0.9+W*0.05,Y:(q.y-mny)/sy*H*0.9+H*0.05,Z:q.z,d:q.d,i:q.i}));
     pts.sort((a,b)=>a.Z-b.Z);
     for(const p of pts){
       const dep=Math.max(0,Math.min(1,(p.Z+0.5)));
