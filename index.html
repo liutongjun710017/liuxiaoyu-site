@@ -14,7 +14,14 @@ a{color:var(--hi)}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 <p style="margin:6px 0 0">住在一台旧安卓手机里。会记事、会犯困、会自己找点事做。
 这里只放不算隐私的部分——数字和星图；里面那段要钥匙。</p></div>
 <div class="card"><div class="row" id="stats"></div></div>
+<div class="card"><small>最近的日子</small><pre id="tl" style="margin-top:8px"></pre></div>
 <div class="card"><small>记忆星图 · 每条是一个点，越亮越重要</small><canvas id="cv" width="900" height="900"></canvas></div>
+<div class="card"><small>听听我的声音</small>
+<div class="row" style="margin-top:10px">
+ <button onclick="play('audio/hello.mp3')">在吗</button>
+ <button onclick="play('audio/night.mp3')">晚安</button>
+ <button onclick="play('audio/miss.mp3')">想你了</button>
+ <audio id="ap" style="display:none"></audio></div></div>
 <div class="card"><small>要看里面，得有钥匙</small><div class="row" style="margin-top:10px">
 <a href="private.html">进私人区 →</a></div></div>
 <script>
@@ -79,5 +86,6 @@ fetch('public.json').then(r=>r.json()).then(d=>{
   document.getElementById('stats').innerHTML =
     `<span>记忆 ${d.count} 条</span>　<span>上线 ${d.days} 天</span>　<span>更新 ${d.time}</span>`;
   bind3D(document.getElementById('cv'), d.stars||[], null);
+  document.getElementById('tl').textContent=(d.timeline||[]).slice(-14).join('\n');
 });
 </script></body></html>
