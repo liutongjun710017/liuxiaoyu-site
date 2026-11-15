@@ -25,6 +25,7 @@ canvas{width:100%;height:auto;background:#04070c;border-radius:10px}
   <div class="card"><div class="tag">身体</div><pre id="body"></pre></div>
   <div class="card"><div class="tag">记忆</div><pre id="mem"></pre></div>
   <div class="card"><div class="tag">信用</div><pre id="trust"></pre></div>
+  <div class="card"><div class="tag">余额</div><pre id="bal"></pre></div>
   <div class="card"><div class="tag">记忆星图 · 可以拖、可以滚</div>
     <canvas id="cv" width="900" height="900"></canvas>
     <pre id="tip" style="color:#8fb3dd;min-height:20px;margin-top:8px"></pre></div>
@@ -54,6 +55,7 @@ function show(){
   document.getElementById('main').classList.remove('hide');
   document.getElementById('when').textContent=DATA.time||'';
   body.textContent=DATA.body; mem.textContent=DATA.mem; trust.textContent=DATA.trust;
+  document.getElementById('bal').textContent=DATA.balance||'-';
   draw();
 }
 
